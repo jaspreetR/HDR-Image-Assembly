@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include <limits>
 #include <vector>
 #include "PFMImage.h"
 #include "PPMImage.h"
@@ -17,48 +18,26 @@ struct pixel_count {
   long long b = 0;
 };
 
-pixel_count count_reliable_pixels(const PFMImage& image) {
+float calculate_dynamic_range(const PFMImage& image) {
   auto width = image.width;
   auto height = image.height;
   auto numComponents = image.numComponents;
-  std::vector<float> image_data;
-  image_data.reserve(image.image_data.size());
 
-  pixel_count count;
-
+  float max_val = 0.0f;
+  float min_val = std::numeric_limits<float>::infinity();
   for (size_t pixel_index = 0; pixel_index < width * height; ++pixel_index) {
-    bool is_reliable_pixel = true;
-    float r_val = image.image_data[pixel_index * numComponents];
-    float g_val = image.image_data[pixel_index * numComponents + 1];
-    float b_val = image.image_data[pixel_index * numComponents + 2];
+    size_t channel_index = pixel_index * numComponents;
+    float grayscale_val = image.image_data[channel_index] + 
+                          image.image_data[channel_index + 1] +
+                          image.image_data[channel_index + 2];
 
-    float lower_bound = 0.005f;
-    float upper_bound = 0.92f;
+    grayscale_val /= 3;
 
-    if (r_val >= lower_bound && r_val <= upper_bound) {
-      ++count.r;
-    } else {
-      is_reliable_pixel = false;
-    }
-
-    if (g_val >= lower_bound && g_val <= upper_bound) {
-      ++count.g;
-    } else {
-      is_reliable_pixel = false;
-    }
-
-    if (b_val >= lower_bound && b_val <= upper_bound) {
-      ++count.b;
-    } else {
-      is_reliable_pixel = false;
-    }
-
-    if (is_reliable_pixel) {
-      ++count.pixels;
-    }
+    max_val = std::max(max_val, grayscale_val);
+    min_val = std::min(min_val, grayscale_val);
   }
 
-  return count;
+  return max_val / min_val;
 }
 
 PFMImage assemble_pfm_sequence(const std::vector<PFMImage>& images) {

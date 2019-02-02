@@ -16,18 +16,10 @@ int main(int argc, char** argv) {
 	images.push_back(PFMImage("Office6.pfm"));
 	images.push_back(PFMImage("Office7.pfm"));
 
-	for (size_t i = 0; i < images.size(); ++i) {
-		auto count = count_reliable_pixels(images[i]);
-		std::cout << "Image " << i << " -- ";
-		std::cout << "(r: " << count.r << ") ";
-		std::cout << "(g: " << count.g << ") ";
-		std::cout << "(b: " << count.b << ") ";
-		std::cout << "(all pixels: " << count.pixels << ") ";
-		std::cout << "(all pixels% " << (float)(count.pixels) / (864 * 576) * 100 << ") " << std::endl;
-	}
-
 	auto assembled_image = assemble_pfm_sequence(images);
 	assembled_image.write_to_file("result.pfm");
+
+	std::cout << "Total dynamic range of assembled image: " << calculate_dynamic_range(assembled_image) << std::endl;
 
 	auto linear_tone_mapped_image = linear_tone_map(assembled_image);
 	linear_tone_mapped_image.write_to_file("result.ppm");
