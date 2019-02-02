@@ -10,6 +10,57 @@
 
 float weighting(float x);
 
+struct pixel_count {
+  long long pixels = 0;
+  long long r = 0;
+  long long g = 0;
+  long long b = 0;
+};
+
+pixel_count count_reliable_pixels(const PFMImage& image) {
+  auto width = image.width;
+  auto height = image.height;
+  auto numComponents = image.numComponents;
+  std::vector<float> image_data;
+  image_data.reserve(image.image_data.size());
+
+  pixel_count count;
+
+  for (size_t pixel_index = 0; pixel_index < width * height; ++pixel_index) {
+    bool is_reliable_pixel = true;
+    float r_val = image.image_data[pixel_index * numComponents];
+    float g_val = image.image_data[pixel_index * numComponents + 1];
+    float b_val = image.image_data[pixel_index * numComponents + 2];
+
+    float lower_bound = 0.005f;
+    float upper_bound = 0.92f;
+
+    if (r_val >= lower_bound && r_val <= upper_bound) {
+      ++count.r;
+    } else {
+      is_reliable_pixel = false;
+    }
+
+    if (g_val >= lower_bound && g_val <= upper_bound) {
+      ++count.g;
+    } else {
+      is_reliable_pixel = false;
+    }
+
+    if (b_val >= lower_bound && b_val <= upper_bound) {
+      ++count.b;
+    } else {
+      is_reliable_pixel = false;
+    }
+
+    if (is_reliable_pixel) {
+      ++count.pixels;
+    }
+  }
+
+  return count;
+}
+
 PFMImage assemble_pfm_sequence(const std::vector<PFMImage>& images) {
   auto width = images[0].width;
   auto height = images[0].height;
@@ -107,45 +158,5 @@ float weighting(float x) {
   std::cout << "should not reach here - inexhaustive conditions " << x << std::endl;
   return -1;
 }
-
-/*
-PFMImage median_filter(const PFMImage& image) {
-  auto width = image.width;
-  auto height = image.height;
-  auto numComponents = image.numComponents;
-  std::vector<float> image_data;
-  image_data.reserve(image.image_data.size());
-
-  for (size_t i = 0; i < height; ++i) {
-    for (size_t j = 0; j < width; ++j) {
-      for (size_t k = 0; k < numComponents; ++k) {
-        size_t channel_index = i * width * numComponents + j * numComponents + k;
-
-        if (i == 0 || i == height - 1 || j == 0 || j == width -1) {
-          image_data.push_back(image.image_data[channel_index]);
-          continue;
-        }
-
-        std::vector<float> neighbours; 
-        neighbours.push_back(image.image_data[channel_index - (width * numComponents) - numComponents]);
-        neighbours.push_back(image.image_data[channel_index - (width * numComponents)]);
-        neighbours.push_back(image.image_data[channel_index - (width * numComponents) + numComponents]);
-        neighbours.push_back(image.image_data[channel_index - numComponents]);
-        neighbours.push_back(image.image_data[channel_index]);
-        neighbours.push_back(image.image_data[channel_index + numComponents]);
-        neighbours.push_back(image.image_data[channel_index + (width * numComponents) - numComponents]);
-        neighbours.push_back(image.image_data[channel_index + (width * numComponents)]);
-        neighbours.push_back(image.image_data[channel_index + (width * numComponents) + numComponents]);
-
-        std::sort(neighbours.begin(), neighbours.end());
-
-        image_data.push_back(neighbours[4]);
-      }
-    }
-  } 
-
-  return PFMImage(width, height, numComponents, image_data);
-}
-*/
 
 #endif
